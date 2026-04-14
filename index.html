@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tree Explorer — Traversals & AVL Trees</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c10;
+  --bg2: #111318;
+  --bg3: #181c24;
+  --surface: #1e2330;
+  --border: #2a3040;
+  --border2: #3a4560;
+  --text: #e8ecf5;
+  --muted: #7a85a0;
+  --dim: #3d4560;
+  --accent: #5b7fff;
+  --accent2: #a78bfa;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --teal: #22d3ee;
+  --pink: #f472b6;
+  --mono: 'DM Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body: 'DM Sans', sans-serif;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,12,16,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; gap: 0;
+  height: 52px;
+}
+.nav-logo { font-family: var(--display); font-weight: 800; font-size: 16px; color: var(--text); margin-right: 2rem; white-space: nowrap; }
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 0; overflow-x: auto; }
+.nav-links a {
+  color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500;
+  padding: 0 14px; height: 52px; display: flex; align-items: center;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-links a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── HERO ── */
+.hero {
+  padding: 5rem 2rem 3rem;
+  max-width: 960px; margin: 0 auto;
+  position: relative;
+}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(91,127,255,0.1); border: 1px solid rgba(91,127,255,0.25);
+  color: var(--accent); font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 4px 12px; border-radius: 99px;
+  margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-family: var(--display); font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 800; line-height: 1.1;
+  background: linear-gradient(135deg, #e8ecf5 30%, #5b7fff 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 1rem;
+}
+.hero p { color: var(--muted); font-size: 17px; max-width: 520px; }
+
+.chip-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2rem; }
+.chip {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-size: 12px; font-family: var(--mono);
+  padding: 4px 12px; border-radius: 6px; cursor: pointer;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── SECTIONS ── */
+section {
+  max-width: 960px; margin: 0 auto;
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--border);
+}
+.section-header { margin-bottom: 2rem; }
+.section-tag {
+  font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.section-title { font-family: var(--display); font-size: 1.75rem; font-weight: 700; }
+.section-desc { color: var(--muted); margin-top: 0.4rem; font-size: 14px; }
+
+/* ── CARDS / PANELS ── */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border2); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+
+@media(max-width: 640px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+}
+
+/* ── TRAVERSAL DEMO ── */
+.trav-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.trav-tab {
+  font-family: var(--mono); font-size: 12px; padding: 6px 14px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--muted); cursor: pointer;
+  transition: all 0.15s;
+}
+.trav-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(91,127,255,0.1); }
+.trav-tab:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+.trav-desc {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem 1.25rem;
+  font-size: 13.5px; color: var(--muted); margin-bottom: 1rem;
+  line-height: 1.7;
+}
+.trav-desc strong { color: var(--text); font-weight: 500; }
+.trav-desc .complexity {
+  display: inline-block; margin-top: 0.5rem;
+  font-family: var(--mono); font-size: 11px; color: var(--green);
+  background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2);
+  padding: 2px 8px; border-radius: 4px;
+}
+
+.tree-canvas-wrap {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.ctrl-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 12px; padding: 7px 14px;
+  border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text); cursor: pointer;
+  transition: all 0.12s;
+}
+.btn:hover { background: var(--bg3); border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #4a6ef5; }
+
+.seq-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-bottom: 0.75rem; min-height: 38px; }
+.seq-node {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3); color: var(--muted);
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s;
+}
+.seq-node.visited { background: rgba(91,127,255,0.15); color: var(--accent); border-color: var(--accent); }
+.seq-node.current { background: var(--accent); color: #fff; border-color: var(--accent); transform: scale(1.15); }
+.seq-arrow { color: var(--dim); font-size: 11px; }
+
+#step-info { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+input[type=range] {
+  -webkit-appearance: none; height: 4px; border-radius: 2px;
+  background: var(--surface); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--accent); cursor: pointer;
+}
+
+/* ── AVL DEMO ── */
+.avl-layout { display: grid; grid-template-columns: 1fr 320px; gap: 1rem; }
+@media(max-width:720px) { .avl-layout { grid-template-columns: 1fr; } }
+
+.avl-input-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+.input-num {
+  font-family: var(--mono); font-size: 13px; padding: 7px 12px;
+  border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text); width: 80px;
+  outline: none; transition: border-color 0.15s;
+}
+.input-num:focus { border-color: var(--accent); }
+
+.avl-log {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem;
+  font-family: var(--mono); font-size: 12px;
+  height: 280px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.log-entry { padding: 4px 8px; border-radius: 5px; color: var(--muted); }
+.log-entry.insert { border-left: 2px solid var(--green); color: var(--green); background: rgba(52,211,153,0.05); }
+.log-entry.delete { border-left: 2px solid var(--red); color: var(--red); background: rgba(248,113,113,0.05); }
+.log-entry.rotate { border-left: 2px solid var(--amber); color: var(--amber); background: rgba(251,191,36,0.05); }
+.log-entry.info { border-left: 2px solid var(--dim); }
+.log-entry.search { border-left: 2px solid var(--teal); color: var(--teal); background: rgba(34,211,238,0.05); }
+
+/* ── OPERATIONS TABLE ── */
+.ops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+.op-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.op-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.op-name { font-family: var(--display); font-weight: 700; font-size: 15px; margin-bottom: 0.4rem; }
+.op-complexity {
+  font-family: var(--mono); font-size: 11px;
+  padding: 2px 8px; border-radius: 4px; display: inline-block;
+  margin-bottom: 0.75rem;
+}
+.op-complexity.green { background: rgba(52,211,153,0.1); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.op-complexity.amber { background: rgba(251,191,36,0.1); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+.op-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem;
+  font-family: var(--mono); font-size: 12.5px;
+  overflow-x: auto; line-height: 1.8;
+}
+.code-block .kw { color: var(--accent2); }
+.code-block .fn { color: var(--teal); }
+.code-block .cm { color: var(--dim); }
+.code-block .str { color: var(--green); }
+.code-block .num { color: var(--amber); }
+
+/* ── BALANCE FACTOR VISUAL ── */
+.bf-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 1rem; }
+.bf-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-family: var(--mono);
+}
+.bf-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ── ROTATION EXPLAINER ── */
+.rot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media(max-width:580px) { .rot-grid { grid-template-columns: 1fr; } }
+.rot-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem;
+}
+.rot-title { font-family: var(--display); font-weight: 700; font-size: 14px; margin-bottom: 0.25rem; }
+.rot-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 1rem; }
+.rot-svg { display: block; width: 100%; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem; text-align: center;
+  color: var(--dim); font-size: 13px;
+  font-family: var(--mono);
+}
+
+/* animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.4s ease both; }
+
+svg text { font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">tree<span>.</span>explorer</div>
+  <div class="nav-links">
+    <a href="#traversals" class="active">Traversals</a>
+    <a href="#avl">AVL Trees</a>
+    <a href="#rotations">Rotations</a>
+    <a href="#operations">Operations</a>
+    <a href="#complexity">Complexity</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero fade-in">
+  <div class="hero-tag">Interactive Reference</div>
+  <h1>Tree Traversals<br>& AVL Trees</h1>
+  <p>Visualize traversal orders, insertions, deletions, and self-balancing rotations — step by step, interactively.</p>
+  <div class="chip-bar">
+    <span class="chip" onclick="scrollTo('#traversals')">Pre-order</span>
+    <span class="chip" onclick="scrollTo('#traversals')">In-order</span>
+    <span class="chip" onclick="scrollTo('#traversals')">Post-order</span>
+    <span class="chip" onclick="scrollTo('#traversals')">Level-order</span>
+    <span class="chip" onclick="scrollTo('#avl')">AVL Insert</span>
+    <span class="chip" onclick="scrollTo('#avl')">AVL Delete</span>
+    <span class="chip" onclick="scrollTo('#rotations')">Rotations</span>
+    <span class="chip" onclick="scrollTo('#complexity')">O(log n)</span>
+  </div>
+</div>
+
+<!-- TRAVERSALS -->
+<section id="traversals">
+  <div class="section-header">
+    <div class="section-tag">01 — Traversal Orders</div>
+    <div class="section-title">Visiting Every Node</div>
+    <div class="section-desc">Four strategies for walking a binary tree. Each has distinct use cases.</div>
+  </div>
+
+  <div class="trav-tabs" id="travTabs">
+    <button class="trav-tab active" data-t="preorder">Pre-order</button>
+    <button class="trav-tab" data-t="inorder">In-order</button>
+    <button class="trav-tab" data-t="postorder">Post-order</button>
+    <button class="trav-tab" data-t="levelorder">Level-order</button>
+  </div>
+
+  <div class="trav-desc" id="travDesc"></div>
+
+  <div class="tree-canvas-wrap">
+    <svg id="travSvg" width="100%" viewBox="0 0 680 300" style="display:block;"></svg>
+  </div>
+
+  <div class="seq-row" id="seqRow"></div>
+  <div style="margin-bottom:1rem;">
+    <span id="step-info" style="font-family:var(--mono);font-size:11px;color:var(--muted);">Press Play or step through</span>
+  </div>
+
+  <div class="ctrl-bar">
+    <button class="btn" id="btnPrev" onclick="travStep(-1)">← Prev</button>
+    <button class="btn primary" id="btnPlay" onclick="travTogglePlay()">▶ Play</button>
+    <button class="btn" id="btnNext" onclick="travStep(1)">Next →</button>
+    <button class="btn" onclick="travReset()">Reset</button>
+    <input type="range" min="200" max="1400" value="700" step="100" id="travSpeed" style="width:80px" oninput="travSpeedVal=1600-parseInt(this.value)">
+    <span style="font-size:11px;color:var(--muted)">speed</span>
+  </div>
+
+  <!-- Pseudocode cards -->
+  <div class="two-col" style="margin-top:1.5rem;">
+    <div class="code-block">
+      <span class="cm">// Pre-order (Root→L→R)</span><br>
+      <span class="kw">function</span> <span class="fn">preorder</span>(node) {<br>
+      &nbsp;&nbsp;<span class="kw">if</span> (!node) <span class="kw">return</span><br>
+      &nbsp;&nbsp;visit(node)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// ROOT</span><br>
+      &nbsp;&nbsp;<span class="fn">preorder</span>(node.left)<br>
+      &nbsp;&nbsp;<span class="fn">preorder</span>(node.right)<br>
+      }
+    </div>
+    <div class="code-block">
+      <span class="cm">// In-order (L→Root→R)</span><br>
+      <span class="kw">function</span> <span class="fn">inorder</span>(node) {<br>
+      &nbsp;&nbsp;<span class="kw">if</span> (!node) <span class="kw">return</span><br>
+      &nbsp;&nbsp;<span class="fn">inorder</span>(node.left)<br>
+      &nbsp;&nbsp;visit(node)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// ROOT</span><br>
+      &nbsp;&nbsp;<span class="fn">inorder</span>(node.right)<br>
+      }
+    </div>
+    <div class="code-block">
+      <span class="cm">// Post-order (L→R→Root)</span><br>
+      <span class="kw">function</span> <span class="fn">postorder</span>(node) {<br>
+      &nbsp;&nbsp;<span class="kw">if</span> (!node) <span class="kw">return</span><br>
+      &nbsp;&nbsp;<span class="fn">postorder</span>(node.left)<br>
+      &nbsp;&nbsp;<span class="fn">postorder</span>(node.right)<br>
+      &nbsp;&nbsp;visit(node)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// ROOT</span><br>
+      }
+    </div>
+    <div class="code-block">
+      <span class="cm">// Level-order (BFS)</span><br>
+      <span class="kw">function</span> <span class="fn">levelOrder</span>(root) {<br>
+      &nbsp;&nbsp;<span class="kw">const</span> q = [root]<br>
+      &nbsp;&nbsp;<span class="kw">while</span> (q.length) {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">const</span> n = q.shift()<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;visit(n)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (n.left) q.push(n.left)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (n.right) q.push(n.right)<br>
+      &nbsp;&nbsp;}<br>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- AVL DEMO -->
+<section id="avl">
+  <div class="section-header">
+    <div class="section-tag">02 — AVL Trees</div>
+    <div class="section-title">Self-Balancing BSTs</div>
+    <div class="section-desc">Named after Adelson-Velsky and Landis (1962). Every node maintains a balance factor of –1, 0, or +1.</div>
+  </div>
+
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;font-size:14px;color:var(--muted);line-height:1.7">
+    <strong style="color:var(--text)">Balance factor</strong> = height(left subtree) − height(right subtree).
+    When any node's factor becomes <strong style="color:var(--red)">±2</strong>, a rotation is applied to restore balance.
+    This guarantees <strong style="color:var(--green)">O(log n)</strong> for search, insert, and delete.
+    <div class="bf-legend">
+      <div class="bf-badge"><div class="bf-dot" style="background:var(--green)"></div> bf = 0 (balanced)</div>
+      <div class="bf-badge"><div class="bf-dot" style="background:var(--amber)"></div> bf = ±1 (ok)</div>
+      <div class="bf-badge"><div class="bf-dot" style="background:var(--red)"></div> bf = ±2 (rotate!)</div>
+      <div class="bf-badge"><div class="bf-dot" style="background:var(--teal)"></div> just inserted / searched</div>
+    </div>
+  </div>
+
+  <div class="avl-layout">
+    <div>
+      <div class="avl-input-row">
+        <input class="input-num" type="number" id="avlInput" placeholder="value" min="1" max="99" value="50" onkeydown="if(event.key==='Enter')avlInsert()">
+        <button class="btn primary" onclick="avlInsert()">Insert</button>
+        <button class="btn" onclick="avlDelete()">Delete</button>
+        <button class="btn" onclick="avlSearch()">Search</button>
+        <button class="btn" onclick="avlReset()">Clear</button>
+      </div>
+      <div class="tree-canvas-wrap">
+        <svg id="avlSvg" width="100%" viewBox="0 0 640 380" style="display:block;min-height:200px;"></svg>
+      </div>
+      <div style="margin-top:0.75rem;font-size:12px;font-family:var(--mono);color:var(--muted)" id="avlStats">Tree is empty. Insert values to begin.</div>
+    </div>
+
+    <div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Operation log</div>
+      <div class="avl-log" id="avlLog">
+        <div class="log-entry info">Ready. Try inserting some values.</div>
+      </div>
+      <div style="margin-top:1rem;">
+        <div style="font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Quick insert</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button class="btn" onclick="avlQuickFill([30,20,40,10,25,35,50])">BST example</button>
+          <button class="btn" onclick="avlQuickFill([1,2,3,4,5,6,7])">Sequential</button>
+          <button class="btn" onclick="avlQuickFill([50,25,75,12,37,62,87])">Balanced</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROTATIONS -->
+<section id="rotations">
+  <div class="section-header">
+    <div class="section-tag">03 — Rotations</div>
+    <div class="section-title">Restoring Balance</div>
+    <div class="section-desc">Four rotation cases, triggered when balance factor reaches ±2.</div>
+  </div>
+
+  <div class="rot-grid">
+    <!-- LL -->
+    <div class="rot-card">
+      <div class="rot-title">LL Rotation</div>
+      <div class="rot-subtitle">Right rotation — heavy on left-left</div>
+      <svg class="rot-svg" viewBox="0 0 260 160">
+        <defs><marker id="ra" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5b7fff" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <!-- Before -->
+        <text x="30" y="16" font-size="10" fill="#7a85a0">Before</text>
+        <g><circle cx="80" cy="38" r="16" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="80" y="42" text-anchor="middle" font-size="11" fill="#f87171">z</text></g>
+        <g><circle cx="50" cy="85" r="16" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="50" y="89" text-anchor="middle" font-size="11" fill="#fbbf24">y</text></g>
+        <g><circle cx="28" cy="130" r="16" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="28" y="134" text-anchor="middle" font-size="11" fill="#5b7fff">x</text></g>
+        <line x1="66" y1="52" x2="58" y2="70" stroke="#3a4560" stroke-width="1"/>
+        <line x1="42" y1="99" x2="34" y2="115" stroke="#3a4560" stroke-width="1"/>
+        <!-- After -->
+        <text x="145" y="16" font-size="10" fill="#7a85a0">After</text>
+        <g><circle cx="190" cy="60" r="16" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="190" y="64" text-anchor="middle" font-size="11" fill="#fbbf24">y</text></g>
+        <g><circle cx="160" cy="110" r="16" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="160" y="114" text-anchor="middle" font-size="11" fill="#5b7fff">x</text></g>
+        <g><circle cx="220" cy="110" r="16" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="220" y="114" text-anchor="middle" font-size="11" fill="#f87171">z</text></g>
+        <line x1="178" y1="73" x2="168" y2="96" stroke="#3a4560" stroke-width="1"/>
+        <line x1="202" y1="73" x2="212" y2="96" stroke="#3a4560" stroke-width="1"/>
+        <!-- Arrow -->
+        <path d="M105 85 L140 85" stroke="#5b7fff" stroke-width="1.5" fill="none" marker-end="url(#ra)"/>
+        <text x="122" y="78" font-size="9" fill="#5b7fff" text-anchor="middle">rotate right</text>
+      </svg>
+    </div>
+
+    <!-- RR -->
+    <div class="rot-card">
+      <div class="rot-title">RR Rotation</div>
+      <div class="rot-subtitle">Left rotation — heavy on right-right</div>
+      <svg class="rot-svg" viewBox="0 0 260 160">
+        <defs><marker id="rb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5b7fff" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <text x="5" y="16" font-size="10" fill="#7a85a0">Before</text>
+        <g><circle cx="40" cy="38" r="16" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="40" y="42" text-anchor="middle" font-size="11" fill="#f87171">z</text></g>
+        <g><circle cx="68" cy="85" r="16" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="68" y="89" text-anchor="middle" font-size="11" fill="#fbbf24">y</text></g>
+        <g><circle cx="90" cy="130" r="16" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="90" y="134" text-anchor="middle" font-size="11" fill="#5b7fff">x</text></g>
+        <line x1="53" y1="52" x2="60" y2="70" stroke="#3a4560" stroke-width="1"/>
+        <line x1="76" y1="99" x2="83" y2="115" stroke="#3a4560" stroke-width="1"/>
+        <text x="145" y="16" font-size="10" fill="#7a85a0">After</text>
+        <g><circle cx="190" cy="60" r="16" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="190" y="64" text-anchor="middle" font-size="11" fill="#fbbf24">y</text></g>
+        <g><circle cx="160" cy="110" r="16" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="160" y="114" text-anchor="middle" font-size="11" fill="#f87171">z</text></g>
+        <g><circle cx="220" cy="110" r="16" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="220" y="114" text-anchor="middle" font-size="11" fill="#5b7fff">x</text></g>
+        <line x1="178" y1="73" x2="168" y2="96" stroke="#3a4560" stroke-width="1"/>
+        <line x1="202" y1="73" x2="212" y2="96" stroke="#3a4560" stroke-width="1"/>
+        <path d="M115 85 L140 85" stroke="#5b7fff" stroke-width="1.5" fill="none" marker-end="url(#rb)"/>
+        <text x="127" y="78" font-size="9" fill="#5b7fff" text-anchor="middle">rotate left</text>
+      </svg>
+    </div>
+
+    <!-- LR -->
+    <div class="rot-card">
+      <div class="rot-title">LR Rotation</div>
+      <div class="rot-subtitle">Left then right — heavy on left-right</div>
+      <svg class="rot-svg" viewBox="0 0 260 170">
+        <defs><marker id="rc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <text x="5" y="16" font-size="10" fill="#7a85a0">Before</text>
+        <g><circle cx="60" cy="35" r="14" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="60" y="39" text-anchor="middle" font-size="10" fill="#f87171">z</text></g>
+        <g><circle cx="35" cy="78" r="14" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="35" y="82" text-anchor="middle" font-size="10" fill="#fbbf24">y</text></g>
+        <g><circle cx="55" cy="120" r="14" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="55" y="124" text-anchor="middle" font-size="10" fill="#5b7fff">x</text></g>
+        <line x1="50" y1="47" x2="42" y2="65" stroke="#3a4560" stroke-width="1"/>
+        <line x1="42" y1="91" x2="48" y2="107" stroke="#3a4560" stroke-width="1"/>
+        <text x="145" y="16" font-size="10" fill="#7a85a0">After</text>
+        <g><circle cx="195" cy="55" r="14" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="195" y="59" text-anchor="middle" font-size="10" fill="#5b7fff">x</text></g>
+        <g><circle cx="170" cy="105" r="14" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="170" y="109" text-anchor="middle" font-size="10" fill="#fbbf24">y</text></g>
+        <g><circle cx="220" cy="105" r="14" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="220" y="109" text-anchor="middle" font-size="10" fill="#f87171">z</text></g>
+        <line x1="185" y1="67" x2="177" y2="92" stroke="#3a4560" stroke-width="1"/>
+        <line x1="205" y1="67" x2="213" y2="92" stroke="#3a4560" stroke-width="1"/>
+        <path d="M86 80 L120 80" stroke="#a78bfa" stroke-width="1.5" fill="none" marker-end="url(#rc)"/>
+        <text x="103" y="72" font-size="8" fill="#a78bfa" text-anchor="middle">L then R</text>
+      </svg>
+    </div>
+
+    <!-- RL -->
+    <div class="rot-card">
+      <div class="rot-title">RL Rotation</div>
+      <div class="rot-subtitle">Right then left — heavy on right-left</div>
+      <svg class="rot-svg" viewBox="0 0 260 170">
+        <defs><marker id="rd" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <text x="5" y="16" font-size="10" fill="#7a85a0">Before</text>
+        <g><circle cx="45" cy="35" r="14" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="45" y="39" text-anchor="middle" font-size="10" fill="#f87171">z</text></g>
+        <g><circle cx="70" cy="78" r="14" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="70" y="82" text-anchor="middle" font-size="10" fill="#fbbf24">y</text></g>
+        <g><circle cx="50" cy="120" r="14" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="50" y="124" text-anchor="middle" font-size="10" fill="#5b7fff">x</text></g>
+        <line x1="56" y1="47" x2="62" y2="65" stroke="#3a4560" stroke-width="1"/>
+        <line x1="62" y1="91" x2="56" y2="107" stroke="#3a4560" stroke-width="1"/>
+        <text x="145" y="16" font-size="10" fill="#7a85a0">After</text>
+        <g><circle cx="195" cy="55" r="14" fill="#1e2330" stroke="#5b7fff" stroke-width="1.5"/><text x="195" y="59" text-anchor="middle" font-size="10" fill="#5b7fff">x</text></g>
+        <g><circle cx="170" cy="105" r="14" fill="#1e2330" stroke="#f87171" stroke-width="1.5"/><text x="170" y="109" text-anchor="middle" font-size="10" fill="#f87171">z</text></g>
+        <g><circle cx="220" cy="105" r="14" fill="#1e2330" stroke="#fbbf24" stroke-width="1.5"/><text x="220" y="109" text-anchor="middle" font-size="10" fill="#fbbf24">y</text></g>
+        <line x1="185" y1="67" x2="177" y2="92" stroke="#3a4560" stroke-width="1"/>
+        <line x1="205" y1="67" x2="213" y2="92" stroke="#3a4560" stroke-width="1"/>
+        <path d="M92 80 L125 80" stroke="#a78bfa" stroke-width="1.5" fill="none" marker-end="url(#rd)"/>
+        <text x="108" y="72" font-size="8" fill="#a78bfa" text-anchor="middle">R then L</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Delete explanation -->
+  <div class="card" style="margin-top:1.5rem;">
+    <div style="font-family:var(--display);font-weight:700;font-size:16px;margin-bottom:1rem;">AVL Deletion — Three Cases</div>
+    <div class="three-col">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:0.5rem;">CASE 1</div>
+        <div style="font-weight:500;font-size:13px;margin-bottom:0.4rem;">Leaf node</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">Simply remove the node. Update heights up the path. Rebalance if needed.</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--amber);margin-bottom:0.5rem;">CASE 2</div>
+        <div style="font-weight:500;font-size:13px;margin-bottom:0.4rem;">One child</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">Replace node with its single child. Update heights and rebalance ancestors.</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:0.5rem;">CASE 3</div>
+        <div style="font-weight:500;font-size:13px;margin-bottom:0.4rem;">Two children</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">Find in-order successor (smallest in right subtree). Copy its value, delete the successor, rebalance.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OPERATIONS -->
+<section id="operations">
+  <div class="section-header">
+    <div class="section-tag">04 — Operations</div>
+    <div class="section-title">Core BST & AVL Operations</div>
+    <div class="section-desc">Every key operation, its logic, and its time complexity.</div>
+  </div>
+
+  <div class="ops-grid">
+    <div class="op-card">
+      <div class="op-name">Search</div>
+      <div class="op-complexity green">O(log n) AVL</div>
+      <div class="op-desc">Compare key with root. Go left if smaller, right if larger. Repeat until found or null.</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Insert</div>
+      <div class="op-complexity green">O(log n) AVL</div>
+      <div class="op-desc">BST insert, then walk back up updating heights. Apply rotation if any node becomes unbalanced.</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Delete</div>
+      <div class="op-complexity green">O(log n) AVL</div>
+      <div class="op-desc">BST delete (3 cases). Update heights on ancestors. Rebalance with rotations as needed.</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Min / Max</div>
+      <div class="op-complexity green">O(log n)</div>
+      <div class="op-desc">Min: follow left children to the leaf. Max: follow right children. Always O(h) = O(log n) in AVL.</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Successor</div>
+      <div class="op-complexity green">O(log n)</div>
+      <div class="op-desc">If right child exists: leftmost node in right subtree. Otherwise: lowest ancestor for which node is in left subtree.</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Predecessor</div>
+      <div class="op-complexity green">O(log n)</div>
+      <div class="op-desc">Mirror of successor. If left child exists: rightmost node in left subtree. Otherwise walk up until a right turn.</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Height</div>
+      <div class="op-complexity green">O(1) cached</div>
+      <div class="op-desc">Stored at each node as an integer. Updated bottom-up after every insert/delete. height = 1 + max(h_left, h_right).</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Balance Factor</div>
+      <div class="op-complexity green">O(1)</div>
+      <div class="op-desc">bf = height(left) − height(right). Must stay in {−1, 0, 1}. Computed from cached heights — O(1).</div>
+    </div>
+    <div class="op-card">
+      <div class="op-name">Range Query</div>
+      <div class="op-complexity amber">O(log n + k)</div>
+      <div class="op-desc">Find lower bound, then in-order traverse until upper bound. k = number of results in range.</div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPLEXITY -->
+<section id="complexity">
+  <div class="section-header">
+    <div class="section-tag">05 — Complexity</div>
+    <div class="section-title">Time & Space Analysis</div>
+    <div class="section-desc">AVL vs unbalanced BST — why balance matters.</div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border2);">
+          <th style="text-align:left;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:0.06em;">Operation</th>
+          <th style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:0.06em;">BST Average</th>
+          <th style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:0.06em;">BST Worst</th>
+          <th style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--green);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">AVL (all cases)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 12px;font-weight:500">Search</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--amber)">O(log n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--red)">O(n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--green);font-weight:500">O(log n)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 12px;font-weight:500">Insert</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--amber)">O(log n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--red)">O(n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--green);font-weight:500">O(log n)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 12px;font-weight:500">Delete</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--amber)">O(log n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--red)">O(n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--green);font-weight:500">O(log n)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 12px;font-weight:500">Min / Max</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--amber)">O(log n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--red)">O(n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--green);font-weight:500">O(log n)</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;font-weight:500">Space</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--muted)">O(n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--muted)">O(n)</td>
+          <td style="padding:10px 12px;text-align:center;font-family:var(--mono);color:var(--muted)">O(n)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;">
+    <div style="font-family:var(--display);font-weight:700;font-size:15px;margin-bottom:0.75rem">Why O(n) worst case for plain BST?</div>
+    <div style="font-size:13.5px;color:var(--muted);line-height:1.7">
+      If you insert values in sorted order (1, 2, 3, 4, 5…), a plain BST degenerates into a 
+      <strong style="color:var(--text)">linked list</strong> — every node has only a right child.
+      Tree height becomes n instead of log n, and all operations take O(n).
+      AVL trees prevent this by enforcing the balance invariant after every operation, guaranteeing
+      height ≤ 1.44 · log₂(n+2) in the worst case.
+    </div>
+  </div>
+</section>
+
+<footer>tree.explorer — built for learning data structures</footer>
+
+<script>
+// ─────────────────── TRAVERSAL ───────────────────
+const TRAV_DATA = {
+  preorder: {
+    name: 'Pre-order',
+    order: ['F','B','A','D','C','E','G','I','H'],
+    desc: '<strong>Root → Left → Right.</strong> Visit each node before its children. Use it to <strong>copy or serialize</strong> a tree, or generate prefix expressions. Implemented with simple recursion — the visit call comes first. <span class="complexity">O(n) time · O(h) space</span>',
+  },
+  inorder: {
+    name: 'In-order',
+    order: ['A','B','C','D','E','F','G','H','I'],
+    desc: '<strong>Left → Root → Right.</strong> For a BST this visits nodes in <strong>sorted ascending order</strong> — making it essential for sorted output, range queries, and validation. <span class="complexity">O(n) time · O(h) space</span>',
+  },
+  postorder: {
+    name: 'Post-order',
+    order: ['A','C','E','D','B','H','I','G','F'],
+    desc: '<strong>Left → Right → Root.</strong> Children are fully processed before the parent. Perfect for <strong>deleting a tree</strong>, computing directory sizes, or evaluating expression trees bottom-up. <span class="complexity">O(n) time · O(h) space</span>',
+  },
+  levelorder: {
+    name: 'Level-order (BFS)',
+    order: ['F','B','G','A','D','I','C','E','H'],
+    desc: '<strong>Level by level, left to right.</strong> Uses a queue instead of recursion. Essential for <strong>shortest-path in unweighted graphs</strong>, printing a tree by depth, and finding minimum depth. <span class="complexity">O(n) time · O(w) space (w = max width)</span>',
+  },
+};
+
+const NODES = {
+  F:{x:340,y:40,  ch:['B','G']},
+  B:{x:190,y:120, ch:['A','D']},
+  G:{x:490,y:120, ch:[null,'I']},
+  A:{x:115,y:200, ch:[]},
+  D:{x:265,y:200, ch:['C','E']},
+  I:{x:565,y:200, ch:['H',null]},
+  C:{x:210,y:275, ch:[]},
+  E:{x:320,y:275, ch:[]},
+  H:{x:510,y:275, ch:[]},
+};
+
+let curTrav = 'preorder', travStep_ = 0, travPlaying = false, travTimer = null, travSpeedVal = 900;
+
+function travDraw(stepIdx) {
+  const t = TRAV_DATA[curTrav];
+  const visited = new Set(t.order.slice(0,stepIdx));
+  const current = stepIdx < t.order.length ? t.order[stepIdx] : null;
+  const svg = document.getElementById('travSvg');
+  const R = 20;
+  let html = `<defs><marker id="tarr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#2a3040" stroke-width="1.5" stroke-linecap="round"/></marker></defs>`;
+
+  // edges
+  for(const [id,n] of Object.entries(NODES)) {
+    for(const c of n.ch) {
+      if(!c) continue;
+      const cn = NODES[c];
+      const dx=cn.x-n.x, dy=cn.y-n.y, d=Math.sqrt(dx*dx+dy*dy);
+      html += `<line x1="${n.x+dx/d*R}" y1="${n.y+dy/d*R}" x2="${cn.x-dx/d*R}" y2="${cn.y-dy/d*R}" stroke="#2a3040" stroke-width="1.5"/>`;
+    }
+  }
+
+  // nodes
+  for(const [id,n] of Object.entries(NODES)) {
+    const isC = id===current, isV = visited.has(id);
+    let fill='#1e2330', stroke='#2a3040', tc='#7a85a0', sw=1.5;
+    if(isC){ fill='#5b7fff'; stroke='#5b7fff'; tc='#fff'; sw=2; }
+    else if(isV){ fill='rgba(91,127,255,0.15)'; stroke='#5b7fff'; tc='#5b7fff'; sw=1.5; }
+    const seq = (isV||isC) ? t.order.indexOf(id)+1 : '';
+    html += `<circle cx="${n.x}" cy="${n.y}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+             <text x="${n.x}" y="${n.y+1}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="500" fill="${tc}">${id}</text>`;
+    if(seq) html += `<text x="${n.x+R-1}" y="${n.y-R+2}" font-size="8" fill="${isC?'#fff':'#5b7fff'}" text-anchor="middle" dominant-baseline="central">${seq}</text>`;
+  }
+
+  svg.innerHTML = html;
+
+  // seq row
+  const seqRow = document.getElementById('seqRow');
+  let shtml = '';
+  t.order.forEach((id,i)=>{
+    const isV = visited.has(id), isC = id===current;
+    let cls = 'seq-node';
+    if(isC) cls+=' current'; else if(isV) cls+=' visited';
+    shtml += `<span class="${cls}">${id}</span>`;
+    if(i<t.order.length-1) shtml += `<span class="seq-arrow">→</span>`;
+  });
+  seqRow.innerHTML = shtml;
+
+  const max = t.order.length;
+  document.getElementById('step-info').textContent =
+    stepIdx===0 ? 'Not started — press Play or Next' :
+    stepIdx>=max ? `Complete ✓ (${max} nodes visited)` :
+    `Step ${stepIdx} of ${max} — visiting "${current}"`;
+  document.getElementById('btnPrev').disabled = stepIdx===0;
+  document.getElementById('btnNext').disabled = stepIdx>=max;
+}
+
+function travStep(dir) {
+  const max = TRAV_DATA[curTrav].order.length;
+  travStep_ = Math.max(0, Math.min(max, travStep_+dir));
+  travDraw(travStep_);
+}
+
+function travReset() { travStep_=0; stopTravPlay(); travDraw(0); }
+
+function travTogglePlay() {
+  if(travPlaying) stopTravPlay();
+  else startTravPlay();
+}
+
+function startTravPlay() {
+  travPlaying=true;
+  document.getElementById('btnPlay').textContent='⏸ Pause';
+  travTick();
+}
+
+function stopTravPlay() {
+  travPlaying=false; clearTimeout(travTimer);
+  const b=document.getElementById('btnPlay');
+  if(b) b.textContent='▶ Play';
+}
+
+function travTick() {
+  if(!travPlaying) return;
+  const max = TRAV_DATA[curTrav].order.length;
+  if(travStep_>=max){ stopTravPlay(); return; }
+  travStep_++;
+  travDraw(travStep_);
+  travTimer = setTimeout(travTick, travSpeedVal);
+}
+
+function setTrav(k) {
+  curTrav=k; travStep_=0; stopTravPlay();
+  document.querySelectorAll('.trav-tab').forEach(b=>b.classList.toggle('active',b.dataset.t===k));
+  document.getElementById('travDesc').innerHTML = TRAV_DATA[k].desc;
+  travDraw(0);
+}
+
+document.querySelectorAll('.trav-tab').forEach(b=>b.onclick=()=>setTrav(b.dataset.t));
+setTrav('preorder');
+
+// nav scroll spy
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', ()=>{
+  let cur='';
+  sections.forEach(s=>{if(window.scrollY>=s.offsetTop-80) cur=s.id;});
+  navLinks.forEach(a=>{a.classList.toggle('active', a.getAttribute('href')==='#'+cur);});
+});
+
+// ─────────────────── AVL ───────────────────
+class AVLNode {
+  constructor(val){ this.val=val; this.left=this.right=null; this.h=1; }
+}
+
+let avlRoot = null;
+
+function h(n){ return n?n.h:0; }
+function bf(n){ return n?h(n.left)-h(n.right):0; }
+function updH(n){ if(n) n.h=1+Math.max(h(n.left),h(n.right)); }
+
+function rotL(x){
+  const y=x.right, T=y.left;
+  y.left=x; x.right=T;
+  updH(x); updH(y);
+  avlLog('rotate','Left rotation on '+x.val);
+  return y;
+}
+
+function rotR(x){
+  const y=x.left, T=y.right;
+  y.right=x; x.left=T;
+  updH(x); updH(y);
+  avlLog('rotate','Right rotation on '+x.val);
+  return y;
+}
+
+function balance(n){
+  updH(n);
+  const b=bf(n);
+  if(b>1){
+    if(bf(n.left)<0){ n.left=rotL(n.left); avlLog('rotate','LR case'); }
+    return rotR(n);
+  }
+  if(b<-1){
+    if(bf(n.right)>0){ n.right=rotR(n.right); avlLog('rotate','RL case'); }
+    return rotL(n);
+  }
+  return n;
+}
+
+function _insert(n,v){
+  if(!n) return new AVLNode(v);
+  if(v<n.val) n.left=_insert(n.left,v);
+  else if(v>n.val) n.right=_insert(n.right,v);
+  else return n;
+  return balance(n);
+}
+
+function _minNode(n){ while(n.left) n=n.left; return n; }
+
+function _delete(n,v){
+  if(!n) return null;
+  if(v<n.val) n.left=_delete(n.left,v);
+  else if(v>n.val) n.right=_delete(n.right,v);
+  else {
+    if(!n.left||!n.right) return n.left||n.right;
+    const s=_minNode(n.right);
+    n.val=s.val;
+    n.right=_delete(n.right,s.val);
+  }
+  return balance(n);
+}
+
+function _search(n,v,path=[]){
+  if(!n) return {found:false,path};
+  path.push(n.val);
+  if(v===n.val) return {found:true,path};
+  if(v<n.val) return _search(n.left,v,path);
+  return _search(n.right,v,path);
+}
+
+let highlightNodes = new Set();
+let highlightColor = '#5b7fff';
+
+function avlInsert(){
+  const v=parseInt(document.getElementById('avlInput').value);
+  if(isNaN(v)||v<1||v>999) return;
+  avlRoot=_insert(avlRoot,v);
+  highlightNodes=new Set([v]); highlightColor='#34d399';
+  avlLog('insert','Inserted '+v);
+  avlRedraw();
+}
+
+function avlDelete(){
+  const v=parseInt(document.getElementById('avlInput').value);
+  if(isNaN(v)) return;
+  const before=avlRoot;
+  avlRoot=_delete(avlRoot,v);
+  highlightNodes=new Set(); highlightColor='#5b7fff';
+  avlLog('delete','Deleted '+v);
+  avlRedraw();
+}
+
+function avlSearch(){
+  const v=parseInt(document.getElementById('avlInput').value);
+  if(isNaN(v)) return;
+  const {found,path}=_search(avlRoot,v);
+  highlightNodes=new Set(path); highlightColor='#22d3ee';
+  avlLog('search', found ? `Found ${v} — path: ${path.join(' → ')}` : `${v} not found — searched: ${path.join(' → ')}`);
+  avlRedraw();
+}
+
+function avlReset(){ avlRoot=null; highlightNodes=new Set(); document.getElementById('avlLog').innerHTML='<div class="log-entry info">Cleared.</div>'; avlRedraw(); }
+
+function avlQuickFill(arr){
+  avlRoot=null;
+  arr.forEach(v=>{ avlRoot=_insert(avlRoot,v); });
+  highlightNodes=new Set(); avlLog('info','Quick-filled: '+arr.join(', '));
+  avlRedraw();
+}
+
+function avlLog(type, msg){
+  const log=document.getElementById('avlLog');
+  const d=document.createElement('div');
+  d.className='log-entry '+type;
+  d.textContent=msg;
+  log.appendChild(d);
+  log.scrollTop=log.scrollHeight;
+}
+
+function avlRedraw(){
+  const svg=document.getElementById('avlSvg');
+  if(!avlRoot){ svg.innerHTML='<text x="320" y="190" text-anchor="middle" font-size="13" fill="#3d4560" font-family="DM Mono,monospace">Empty tree</text>'; updateStats(); return; }
+
+  // layout
+  const positions={};
+  let minX=Infinity, maxX=-Infinity;
+  function layout(n, depth, left, right){
+    if(!n) return;
+    const x=(left+right)/2, y=30+depth*70;
+    positions[n.val]={x,y,bf:bf(n),h:n.h};
+    minX=Math.min(minX,x); maxX=Math.max(maxX,x);
+    layout(n.left,depth+1,left,(left+right)/2);
+    layout(n.right,depth+1,(left+right)/2,right);
+  }
+
+  const treeH = (() => { function hh(n){return n?1+Math.max(hh(n.left),hh(n.right)):0;} return hh(avlRoot); })();
+  const width = Math.max(480, Math.pow(2,treeH)*40);
+  layout(avlRoot,0,0,width);
+
+  // center & scale to fit 640
+  const span = maxX - minX + 60;
+  const scale = Math.min(1, 600/span);
+  const offsetX = (640 - span*scale)/2 - minX*scale + 30;
+  const svgH = 30 + treeH*70 + 30;
+  svg.setAttribute('viewBox',`0 0 640 ${Math.max(200,svgH)}`);
+
+  const R=18;
+  let html='';
+
+  function drawEdges(n){
+    if(!n) return;
+    const p=positions[n.val];
+    const px=p.x*scale+offsetX, py=p.y;
+    if(n.left){
+      const c=positions[n.left.val];
+      const cx=c.x*scale+offsetX, cy=c.y;
+      const dx=cx-px, dy=cy-py, d=Math.sqrt(dx*dx+dy*dy);
+      html+=`<line x1="${px+dx/d*R}" y1="${py+dy/d*R}" x2="${cx-dx/d*R}" y2="${cy-dy/d*R}" stroke="#2a3040" stroke-width="1.5"/>`;
+      drawEdges(n.left);
+    }
+    if(n.right){
+      const c=positions[n.right.val];
+      const cx=c.x*scale+offsetX, cy=c.y;
+      const dx=cx-px, dy=cy-py, d=Math.sqrt(dx*dx+dy*dy);
+      html+=`<line x1="${px+dx/d*R}" y1="${py+dy/d*R}" x2="${cx-dx/d*R}" y2="${cy-dy/d*R}" stroke="#2a3040" stroke-width="1.5"/>`;
+      drawEdges(n.right);
+    }
+  }
+
+  function drawNodes(n){
+    if(!n) return;
+    const p=positions[n.val];
+    const px=p.x*scale+offsetX, py=p.y;
+    const isHl = highlightNodes.has(n.val);
+    const b=p.bf;
+    let stroke = b===0?'#34d399' : Math.abs(b)===1?'#fbbf24' : '#f87171';
+    let fill='#111318', tc='#e8ecf5', sw=1.5;
+    if(isHl){ fill=highlightColor+'33'; stroke=highlightColor; sw=2.5; tc=highlightColor; }
+    html+=`<circle cx="${px}" cy="${py}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+           <text x="${px}" y="${py+1}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="500" fill="${tc}">${n.val}</text>
+           <text x="${px+R-1}" y="${py-R+2}" font-size="7" fill="${stroke}" text-anchor="middle" dominant-baseline="central">${b>=0?'+':''}${b}</text>`;
+    drawNodes(n.left); drawNodes(n.right);
+  }
+
+  drawEdges(avlRoot);
+  drawNodes(avlRoot);
+  svg.innerHTML=html;
+  updateStats();
+}
+
+function updateStats(){
+  function hh(n){return n?1+Math.max(hh(n.left),hh(n.right)):0;}
+  function cnt(n){return n?1+cnt(n.left)+cnt(n.right):0;}
+  const n=cnt(avlRoot), hv=hh(avlRoot);
+  document.getElementById('avlStats').textContent = avlRoot
+    ? `nodes: ${n}  ·  height: ${hv}  ·  max height if balanced: ${Math.ceil(Math.log2(n+1))}`
+    : 'Tree is empty.';
+}
+
+avlRedraw();
+
+function scrollTo(sel){
+  document.querySelector(sel)?.scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>
